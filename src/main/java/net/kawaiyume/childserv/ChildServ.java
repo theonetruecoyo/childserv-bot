@@ -75,6 +75,10 @@ import net.kawaiyume.childserv.brigadier.helpers.SourceContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.File;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
@@ -777,11 +781,18 @@ public class ChildServ
         final RoomId newRoomId = mxClient.room().create(createRoomRequest);
 
         final MarkdownEngine markdownEngine = new MarkdownEngine();
-        final String message = "**You just joined #degeneracy:midov.pl, a tabooless fetish & shitposting room for true deviants. Visit our community page for more information: +degeneracy:midov.pl**\n" + "\n" + "This room uses end-to-end encryption. This means only users inside the room can read the messages and new users won't be able to see messages sent before they joined the room. When you join, you will either see an empty room or messages that fail to load. This is normal and you don't have to do anything to receive messages normally from this point on.\n" + "\n" + "If messages keep failing to decrypt, or your messages take a long time to send, this is probably an issue of your homeserver. Especially matrix.org handles encrypted rooms poorly and it is recommended you switch to a faster server. To find out how to do this and to ask other questions related to Matrix or Element, join our Matrix / Element discussion room: #unabletodecrypt:midov.pl\n" + "\n" + "**Rules**\n" + "\n" + "Almost everything is allowed here and moderation is kept to the absolute minimum, but please follow our 3 rules:\n" + "\n" + "- 1  Don't be narrow-minded. There are no rules except the ones listed here, which exist for practical and legal reasons. Don't let your morals or beliefs get in the way of other peoples fun.\n" + "- 2  Don't confess or plan violent or sexual crimes in a serious way.\n" + "- 3  Don't post, request or discuss pornographic or sexualized content involving real children. This means: any images or videos naked, in underwear or in a sexual context.\n" + "\n" + "Everything that is not on this list is allowed. Join the room at your own discretion if you are easily shocked or upset. Also keep in mind that \"tabooless\" does not mean \"lawless\", and that it is your own responsibility to follow additional laws of your country or state that could get you in trouble.\n" + "\n" + "Have fun.";
+        try
+        {
+            final String message = String.join("\n", Files.readAllLines(new File("welcome.md").toPath(), StandardCharsets.UTF_8));
 
-        mxClient.event().sendFormattedMessage(newRoomId.getRoomId(), message, markdownEngine.render(message));
+            mxClient.event().sendFormattedMessage(newRoomId.getRoomId(), message, markdownEngine.render(message));
 
-        welcomeRooms.put(newRoomId.getRoomId(), new WelcomeRoom(newRoomId.getRoomId()));
+            welcomeRooms.put(newRoomId.getRoomId(), new WelcomeRoom(newRoomId.getRoomId()));
+        }
+        catch (final IOException e)
+        {
+            e.printStackTrace();
+        }
     }
 
     private void comeBack(final String roomId)
