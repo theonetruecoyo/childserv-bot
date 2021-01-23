@@ -173,7 +173,7 @@ public class ChildServ
         final List<Event> events = mxClient.event().members(roomId).getChunk();
         final List<Event> banned = events.stream().filter(e -> ((RoomMemberContent) e.getContent()).getMembership().equals("ban")).collect(Collectors.toList());
 
-        System.err.println("----- Status for room " + roomId);
+        /*System.err.println("----- Status for room " + roomId);
         joinedMembers.getJoined().keySet().forEach(k ->
         {
             try
@@ -199,7 +199,7 @@ public class ChildServ
             {
                 System.err.println(k + " - exception");
             }
-        });
+        });*/
 
         roomsBanned.put(roomId, new ConcurrentHashMap<>());
 
