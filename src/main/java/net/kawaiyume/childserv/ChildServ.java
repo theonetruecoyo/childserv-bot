@@ -806,9 +806,6 @@ public class ChildServ
 
         final CreateRoomRequest createRoomRequest = new CreateRoomRequest();
         createRoomRequest.setDirect(true);
-        createRoomRequest.setName("Welcome to Degeneracy");
-        createRoomRequest.setRoomAliasName(UUID.randomUUID().toString());
-        createRoomRequest.setTopic("Information about #degeneracy:midov.pl");
 
         final List<String> invitations = new ArrayList<>();
         invitations.add(who);
@@ -819,10 +816,15 @@ public class ChildServ
         final MarkdownEngine markdownEngine = new MarkdownEngine();
 
         // find the param for the WELCOME mode of this room
-        final String message = botConfig.getParam(roomId, Config.RoomMode.WELCOME);
-        if(message != null && !message.isEmpty())
+        final String param = botConfig.getParam(roomId, Config.RoomMode.WELCOME);
+        if(param != null && !param.isEmpty())
         {
-            mxClient.event().sendFormattedMessage(newRoomId.getRoomId(), message, markdownEngine.render(message));
+            // now try to find the variable for this parameter
+            final String message = botConfig.getVars().get(param);
+            if(message != null && !message.isEmpty())
+            {
+                mxClient.event().sendFormattedMessage(newRoomId.getRoomId(), message, markdownEngine.render(message));
+            }
         }
 
         welcomeRooms.put(newRoomId.getRoomId(), new WelcomeRoom(newRoomId.getRoomId()));
