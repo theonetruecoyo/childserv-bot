@@ -28,3 +28,9 @@ they feel the room is dead.
 - ✅ Have a list of admin member nick that have the right to send commands
 - ✅ Command engine based on Brigadier from Mojang
 - ✅ Ban list functionality that will synchronise ban across a list of rooms
+
+### v1.0.3
+
+- ✅ Authentication by token now works as expected
+- ✅ Variables can be declared
+- ✅ Welcome tag need a parameter, this parameter will be the name of a variable

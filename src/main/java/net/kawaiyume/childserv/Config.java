@@ -44,6 +44,7 @@ import org.jnbt.Tag;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
@@ -56,7 +57,8 @@ public class Config extends NBTNavigator
         CONNECTION,
         ROOMS,
         COMMANDS,
-        ADMINS
+        ADMINS,
+        VARS
     }
 
     private enum Key
@@ -64,9 +66,12 @@ public class Config extends NBTNavigator
         HOST,
         USERNAME,
         PASSWORD,
-        USERTOKEN,
+        ACCESSTOKEN,
+        DEVICEID,
+        USERID,
 
         MODES,
+        PARAMS,
 
         PROMPT
     }
@@ -111,6 +116,8 @@ public class Config extends NBTNavigator
     public Config()
     {
         super("config.dat");
+
+        // TEST pantalaimon setHost("http://pve:8008");
     }
 
     private CompoundTag folder(final String path)
@@ -208,14 +215,34 @@ public class Config extends NBTNavigator
         return getString(Folder.CONNECTION, Key.USERNAME);
     }
 
-    public void setUserToken(final String token)
+    public void setAccessToken(final String token)
     {
-        setString(Folder.CONNECTION, Key.USERTOKEN, token);
+        setString(Folder.CONNECTION, Key.ACCESSTOKEN, token);
     }
 
-    public String getUserToken()
+    public String getAccessToken()
     {
-        return getString(Folder.CONNECTION, Key.USERTOKEN);
+        return getString(Folder.CONNECTION, Key.ACCESSTOKEN);
+    }
+
+    public void setDeviceId(final String deviceId)
+    {
+        setString(Folder.CONNECTION, Key.DEVICEID, deviceId);
+    }
+
+    public String getDeviceId()
+    {
+        return getString(Folder.CONNECTION, Key.DEVICEID);
+    }
+
+    public void setUserId(final String userId)
+    {
+        setString(Folder.CONNECTION, Key.USERID, userId);
+    }
+
+    public String getUserId()
+    {
+        return getString(Folder.CONNECTION, Key.USERID);
     }
 
     public void setPrompt(final String prompt)
@@ -397,6 +424,68 @@ public class Config extends NBTNavigator
     {
         final ListTag l = list(Folder.ADMINS, StringTag.class);
         return l.getValue().stream().map(t -> (StringTag)t).anyMatch(t -> t.getValue().equals(userId));
+    }
+
+    public void setVar(final String var, final String payload)
+    {
+        final CompoundTag f = folder(Folder.VARS);
+        f.put(new StringTag(var, payload));
+
+        save();
+    }
+
+    public void delVar(final String var)
+    {
+        final CompoundTag f = folder(Folder.VARS);
+        f.getValue().remove(var);
+
+        save();
+    }
+
+    public Map<String, String> getVars()
+    {
+        final CompoundTag f = folder(Folder.VARS);
+        return f.getValue().values().stream().collect(Collectors.toMap(Tag::getName, e -> (String)e.getValue()));
+    }
+
+    public void setRoomModeParams(final String room, final RoomMode mode, final String params)
+    {
+        final CompoundTag r = getRoom(room, false);
+        if(r != null)
+        {
+            if(!r.containsKey(Key.PARAMS.name().toLowerCase()))
+            {
+                // add empty params root
+                final CompoundTag lParams = new CompoundTag(Key.PARAMS.name().toLowerCase());
+                r.put(lParams);
+            }
+
+            final CompoundTag lParams = (CompoundTag) r.get(Key.PARAMS.name().toLowerCase());
+            lParams.put(mode.name(), new StringTag(mode.name(), params));
+
+            save();
+        }
+    }
+
+    public String getParam(final String room, final RoomMode mode)
+    {
+        final CompoundTag r = getRoom(room, false);
+        if(r != null)
+        {
+            if(r.containsKey(Key.PARAMS.name().toLowerCase()))
+            {
+                final CompoundTag lParams = (CompoundTag) r.get(Key.PARAMS.name().toLowerCase());
+                if(lParams != null && !lParams.isEmpty())
+                {
+                    if(lParams.containsKey(mode.name()))
+                    {
+                        return ((StringTag)lParams.get(mode.name())).getValue();
+                    }
+                }
+            }
+        }
+
+        return null;
     }
 
     public static void main(final String[] args)

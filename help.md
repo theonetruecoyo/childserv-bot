@@ -18,12 +18,18 @@ Here is the list of the commands :
 
 - `/room add <id>` : add the `id` room to the managed room list
 - `/room del <id>` : del the `id` room from the managed room list
-- `/room del list` : list all rooms from managed room list
-
-
+- `/room list` : list all rooms from managed room list
 - `/room <id> mode add <mode>` : add a `mode` to the `id` room
 - `/room <id> mode add <mode>` : del the `mode` from the `id` room
 - `/room <id> mode list` : list all modes for the room `id`
+- `/room <id> params <mode> set <params>` : set the params for the mode `mode` of room `id`
+
+## Variables
+
+- `/vars set <var> <payload>` : set the `var` to `payload`
+- `/vars get <var>` : get the payload for the `var`
+- `/vars del <var>` : del the `var`
+- `/vars list` : list the vars
 
 ### Valid modes
 

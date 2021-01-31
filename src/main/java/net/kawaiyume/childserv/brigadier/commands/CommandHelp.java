@@ -39,6 +39,8 @@ package net.kawaiyume.childserv.brigadier.commands;
 import com.mojang.brigadier.CommandDispatcher;
 import net.kawaiyume.childserv.brigadier.helpers.SourceContext;
 
+import java.io.File;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 
@@ -61,7 +63,7 @@ public final class CommandHelp
     {
         try
         {
-            final String help = new String(Files.readAllBytes(Paths.get(CommandHelp.class.getResource("help.md").toURI())));
+            final String help = String.join("\n", Files.readAllLines(new File("help.md").toPath(), StandardCharsets.UTF_8));
             source.getChildServ().post(source.getRoomId(), help, true);
         }
         catch (final Exception e)

@@ -47,8 +47,14 @@ public class DefaultConfigWriter
 
         config.setHost("-redacted-");
         config.setUsername("childservant");
+
+        // password authentication
         config.setPassword("-redacted-");
-        config.setUserToken("");
+
+        // token authentication
+        config.setAccessToken("");
+        config.setDeviceId("");
+        config.setUserId("");
 
         config.setPrompt("/");
 

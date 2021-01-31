@@ -41,9 +41,10 @@ import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import io.github.ma1uta.matrix.client.StandaloneClient;
 import io.github.ma1uta.matrix.client.model.auth.LoginResponse;
 import io.github.ma1uta.matrix.client.model.event.JoinedMembersResponse;
-import io.github.ma1uta.matrix.client.model.presence.PresenceStatus;
 import io.github.ma1uta.matrix.client.model.room.CreateRoomRequest;
 import io.github.ma1uta.matrix.client.model.room.RoomId;
+import io.github.ma1uta.matrix.client.model.serverdiscovery.HomeserverInfo;
+import io.github.ma1uta.matrix.client.model.serverdiscovery.ServerDiscoveryResponse;
 import io.github.ma1uta.matrix.client.model.sync.AccountData;
 import io.github.ma1uta.matrix.client.model.sync.DeviceLists;
 import io.github.ma1uta.matrix.client.model.sync.InvitedRoom;
@@ -70,6 +71,7 @@ import net.kawaiyume.childserv.brigadier.commands.CommandAdmin;
 import net.kawaiyume.childserv.brigadier.commands.CommandBanUnban;
 import net.kawaiyume.childserv.brigadier.commands.CommandHelp;
 import net.kawaiyume.childserv.brigadier.commands.CommandRoom;
+import net.kawaiyume.childserv.brigadier.commands.CommandVariable;
 import net.kawaiyume.childserv.brigadier.commands.CommandVersion;
 import net.kawaiyume.childserv.brigadier.helpers.SourceContext;
 import org.slf4j.Logger;
@@ -104,7 +106,7 @@ public class ChildServ
 
     private static boolean DEBUG_MODE = false;
     private static final boolean DEBUG_SYNC_THREAD = false;
-    private static final boolean BAN_UNBAN_DRY_RUN = true;
+    private static final boolean BAN_UNBAN_DRY_RUN = false;
 
     private final Config botConfig;
 
@@ -139,11 +141,45 @@ public class ChildServ
         CommandAdmin.register(dispatcher);
         CommandHelp.register(dispatcher);
         CommandBanUnban.register(dispatcher);
+        CommandVariable.register(dispatcher);
 
         try
         {
-            final LoginResponse response = mxClient.auth().login(botConfig.getUsername(), botConfig.getPassword().toCharArray());
-            selfMemberId = response.getUserId();
+            final String accessToken = botConfig.getAccessToken();
+            if(accessToken != null && !accessToken.isEmpty())
+            {
+                LOGGER.info("Authentication with auth token ...");
+
+                // login using access token
+                final LoginResponse fakeLoginFromToken = new LoginResponse();
+                fakeLoginFromToken.setUserId(botConfig.getUserId());
+                fakeLoginFromToken.setAccessToken(botConfig.getAccessToken());
+                fakeLoginFromToken.setDeviceId(botConfig.getDeviceId());
+                fakeLoginFromToken.setHomeServer(botConfig.getHost());
+
+                final ServerDiscoveryResponse serverDiscoveryResponse = new ServerDiscoveryResponse();
+                final HomeserverInfo homeserverInfo = new HomeserverInfo();
+                homeserverInfo.setBaseUrl("https://" + botConfig.getHost());
+                serverDiscoveryResponse.setHomeserver(homeserverInfo);
+                fakeLoginFromToken.setWellKnown(serverDiscoveryResponse);
+
+                mxClient.afterLogin(fakeLoginFromToken);
+                selfMemberId = botConfig.getUserId();
+            }
+            else
+            {
+                LOGGER.info("Authentication with password ...");
+
+                // login using password, the reply will set the access token for the next time
+                final LoginResponse response = mxClient.auth().login(botConfig.getUsername(), botConfig.getPassword().toCharArray());
+
+                // update the config
+                botConfig.setAccessToken(response.getAccessToken());
+                botConfig.setUserId(response.getUserId());
+                botConfig.setDeviceId(response.getDeviceId());
+
+                selfMemberId = response.getUserId();
+            }
 
             clientLoggedIn();
         }
@@ -583,7 +619,7 @@ public class ChildServ
 
                                                     if (botConfig.isRoomModeEnabled(joinEntry.getKey(), Config.RoomMode.WELCOME))
                                                     {
-                                                        sendWelcomeMessage(senderId);
+                                                        sendWelcomeMessage(senderId, joinEntry.getKey());
                                                     }
                                                 }
                                                 else
@@ -764,7 +800,7 @@ public class ChildServ
         }
     }
 
-    private void sendWelcomeMessage(final String who)
+    private void sendWelcomeMessage(final String who, final String roomId)
     {
         LOGGER.info("Sending welcome message to {}", who);
 
@@ -781,18 +817,15 @@ public class ChildServ
         final RoomId newRoomId = mxClient.room().create(createRoomRequest);
 
         final MarkdownEngine markdownEngine = new MarkdownEngine();
-        try
-        {
-            final String message = String.join("\n", Files.readAllLines(new File("welcome.md").toPath(), StandardCharsets.UTF_8));
 
+        // find the param for the WELCOME mode of this room
+        final String message = botConfig.getParam(roomId, Config.RoomMode.WELCOME);
+        if(message != null && !message.isEmpty())
+        {
             mxClient.event().sendFormattedMessage(newRoomId.getRoomId(), message, markdownEngine.render(message));
+        }
 
-            welcomeRooms.put(newRoomId.getRoomId(), new WelcomeRoom(newRoomId.getRoomId()));
-        }
-        catch (final IOException e)
-        {
-            e.printStackTrace();
-        }
+        welcomeRooms.put(newRoomId.getRoomId(), new WelcomeRoom(newRoomId.getRoomId()));
     }
 
     private void comeBack(final String roomId)

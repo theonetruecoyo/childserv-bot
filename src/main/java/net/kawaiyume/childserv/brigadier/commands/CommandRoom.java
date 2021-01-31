@@ -90,6 +90,16 @@ public final class CommandRoom
                             .executes(c -> roomModeList(c.getSource(), getString(c, "id")))
                         )
                     )
+
+                    .then(literal("params")
+                        .then(argument("mode", new RoomModeType())
+                            .then(literal("set")
+                                .then(argument("params", string())
+                                    .executes(c -> roomModeSetParams(c.getSource(), getString(c, "id"), getRoomMode(c, "mode"), getString(c, "params")))
+                                )
+                            )
+                        )
+                    )
                 )
 
                 .then(literal("list")
@@ -130,7 +140,16 @@ public final class CommandRoom
             str.append("- ").append(roomId).append(" [").append(source.getChildServ().getRoomName(roomId)).append(']').append('\n');
 
             // add modes for each rooms
-            source.getChildServ().getConfig().getRoomModes(roomId).forEach(room -> str.append("  - ").append(room).append('\n'));
+            source.getChildServ().getConfig().getRoomModes(roomId).forEach(mode ->
+            {
+                str.append("  - ").append(mode);
+                final String param = source.getChildServ().getConfig().getParam(roomId, Config.RoomMode.find(mode));
+                if(param != null && !param.isEmpty())
+                {
+                    str.append(" [ ").append(param).append(" ]");
+                }
+                str.append('\n');
+            });
         });
 
         source.getChildServ().post(source.getRoomId(), str.toString(), true);
@@ -163,9 +182,28 @@ public final class CommandRoom
         final StringBuilder str = new StringBuilder();
         str.append("# Mode list for room ").append(roomId).append(" :").append('\n');
 
-        source.getChildServ().getConfig().getRoomModes(roomId).forEach(room -> str.append("- ").append(room).append('\n'));
+        source.getChildServ().getConfig().getRoomModes(roomId).forEach(mode ->
+        {
+            str.append("- ").append(mode);
+            final String param = source.getChildServ().getConfig().getParam(roomId, Config.RoomMode.find(mode));
+            if(param != null && !param.isEmpty())
+            {
+                str.append(" [ ").append(param).append(" ]");
+            }
+            str.append('\n');
+        });
 
         source.getChildServ().post(source.getRoomId(), str.toString(), true);
+
+        return 1;
+    }
+
+    private static int roomModeSetParams(final SourceContext source, final String roomId, final Config.RoomMode mode, final String params)
+    {
+        LOGGER.info("{} have set parameter(s) {} to mode {} for room {}", source.getMemberId(), params, mode.name(), roomId);
+
+        source.getChildServ().getConfig().setRoomModeParams(roomId, mode, params);
+        source.getChildServ().post(source.getRoomId(), "Params set to " + params + " to mode " + mode.name() + " for room " + roomId);
 
         return 1;
     }
