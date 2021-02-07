@@ -58,7 +58,8 @@ public class Config extends NBTNavigator
         ROOMS,
         COMMANDS,
         ADMINS,
-        VARS
+        VARS,
+        SERVERS
     }
 
     private enum Key
@@ -116,8 +117,6 @@ public class Config extends NBTNavigator
     public Config()
     {
         super("config.dat");
-
-        // TEST pantalaimon setHost("http://pve:8008");
     }
 
     private CompoundTag folder(final String path)
@@ -424,6 +423,39 @@ public class Config extends NBTNavigator
     {
         final ListTag l = list(Folder.ADMINS, StringTag.class);
         return l.getValue().stream().map(t -> (StringTag)t).anyMatch(t -> t.getValue().equals(userId));
+    }
+
+    public void addServer(final String server)
+    {
+        final ListTag l = list(Folder.SERVERS, StringTag.class);
+        if(l.getValue().stream().map(t -> (StringTag)t).noneMatch(t -> t.getValue().equals(server)))
+        {
+            l.getValue().add(new StringTag(null, server));
+        }
+
+        save();
+    }
+
+    public void delServer(final String server)
+    {
+        final ListTag l = list(Folder.SERVERS, StringTag.class);
+        for(final Tag<?> t : l.getValue())
+        {
+            final StringTag tt = (StringTag) t;
+            if(tt.getValue().equals(server))
+            {
+                l.getValue().remove(t);
+                break;
+            }
+        }
+
+        save();
+    }
+
+    public List<String> getServers()
+    {
+        final ListTag l = list(Folder.SERVERS, StringTag.class);
+        return l.getValue().stream().map(t -> (StringTag)t).map(StringTag::getValue).collect(Collectors.toList());
     }
 
     public void setVar(final String var, final String payload)

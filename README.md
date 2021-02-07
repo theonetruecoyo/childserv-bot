@@ -34,3 +34,8 @@ they feel the room is dead.
 - ✅ Authentication by token now works as expected
 - ✅ Variables can be declared
 - ✅ Welcome tag need a parameter, this parameter will be the name of a variable
+
+
+### v1.0.4
+
+- ✅ Switched from joinById to joinByIdOrAlias, the server list is in the config file

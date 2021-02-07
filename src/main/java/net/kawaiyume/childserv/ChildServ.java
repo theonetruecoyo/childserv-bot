@@ -71,16 +71,13 @@ import net.kawaiyume.childserv.brigadier.commands.CommandAdmin;
 import net.kawaiyume.childserv.brigadier.commands.CommandBanUnban;
 import net.kawaiyume.childserv.brigadier.commands.CommandHelp;
 import net.kawaiyume.childserv.brigadier.commands.CommandRoom;
+import net.kawaiyume.childserv.brigadier.commands.CommandSay;
 import net.kawaiyume.childserv.brigadier.commands.CommandVariable;
 import net.kawaiyume.childserv.brigadier.commands.CommandVersion;
 import net.kawaiyume.childserv.brigadier.helpers.SourceContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
@@ -88,7 +85,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -105,6 +101,7 @@ public class ChildServ
     private static final Logger LOGGER = LoggerFactory.getLogger(ChildServ.class);
 
     private static boolean DEBUG_MODE = false;
+    private static boolean DONT_LEAVE_ROOM = false;
     private static final boolean DEBUG_SYNC_THREAD = false;
     private static final boolean BAN_UNBAN_DRY_RUN = false;
 
@@ -142,6 +139,7 @@ public class ChildServ
         CommandHelp.register(dispatcher);
         CommandBanUnban.register(dispatcher);
         CommandVariable.register(dispatcher);
+        CommandSay.register(dispatcher);
 
         try
         {
@@ -198,7 +196,7 @@ public class ChildServ
     public void joinRoom(final String roomId)
     {
         LOGGER.info("{} :: joining room", roomId);
-        mxClient.room().joinById(roomId, null);
+        iJoinRoom(roomId);
 
         LOGGER.info("{} :: loading users for room", roomId);
         final JoinedMembersResponse joinedMembers = mxClient.event().joinedMembers(roomId);
@@ -271,11 +269,23 @@ public class ChildServ
 
     public void leaveRoom(final String roomId)
     {
-        LOGGER.info("{} :: leaving room", roomId);
-        mxClient.room().leave(roomId);
+        if(DONT_LEAVE_ROOM)
+        {
+            return;
+        }
 
-        roomsUsers.remove(roomId);
-        roomsBanned.remove(roomId);
+        try
+        {
+            LOGGER.info("{} :: leaving room", roomId);
+            mxClient.room().leave(roomId);
+
+            roomsUsers.remove(roomId);
+            roomsBanned.remove(roomId);
+        }
+        catch(final Exception e)
+        {
+            LOGGER.error("Unable to leave room ...", e);
+        }
     }
 
     public void post(final String roomId, final String message, final boolean markown)
@@ -358,6 +368,19 @@ public class ChildServ
     public Config getConfig()
     {
         return botConfig;
+    }
+
+    private void iJoinRoom(final String roomId)
+    {
+        final List<String> servers = botConfig.getServers();
+        if(servers == null || servers.isEmpty())
+        {
+            mxClient.room().joinById(roomId, null);
+        }
+        else
+        {
+            mxClient.room().joinByIdOrAlias(roomId, servers, null);
+        }
     }
 
     private void clientLoggedIn()
@@ -842,7 +865,7 @@ public class ChildServ
         }
 
         LOGGER.debug("Joining room {} after having kicked", roomId);
-        mxClient.room().joinById(roomId, null);
+        iJoinRoom(roomId);
     }
 
     private void checkForObsoleteWelcomeRooms()
