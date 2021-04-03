@@ -41,6 +41,7 @@ import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import io.github.ma1uta.matrix.client.StandaloneClient;
 import io.github.ma1uta.matrix.client.model.auth.LoginResponse;
 import io.github.ma1uta.matrix.client.model.event.JoinedMembersResponse;
+import io.github.ma1uta.matrix.client.model.receipt.ReadMarkersRequest;
 import io.github.ma1uta.matrix.client.model.room.CreateRoomRequest;
 import io.github.ma1uta.matrix.client.model.room.RoomId;
 import io.github.ma1uta.matrix.client.model.serverdiscovery.HomeserverInfo;
@@ -68,8 +69,10 @@ import io.github.ma1uta.matrix.event.content.RoomMessageContent;
 import io.github.ma1uta.matrix.event.message.Text;
 import io.github.ma1uta.matrix.impl.exception.MatrixException;
 import net.kawaiyume.childserv.brigadier.commands.CommandAdmin;
+import net.kawaiyume.childserv.brigadier.commands.CommandAuthentication;
 import net.kawaiyume.childserv.brigadier.commands.CommandBanUnban;
 import net.kawaiyume.childserv.brigadier.commands.CommandHelp;
+import net.kawaiyume.childserv.brigadier.commands.CommandLife;
 import net.kawaiyume.childserv.brigadier.commands.CommandRoom;
 import net.kawaiyume.childserv.brigadier.commands.CommandSay;
 import net.kawaiyume.childserv.brigadier.commands.CommandVariable;
@@ -140,6 +143,8 @@ public class ChildServ
         CommandBanUnban.register(dispatcher);
         CommandVariable.register(dispatcher);
         CommandSay.register(dispatcher);
+        CommandAuthentication.register(dispatcher);
+        CommandLife.register(dispatcher);
 
         try
         {
@@ -481,6 +486,15 @@ public class ChildServ
         // background task for leaving welcome rooms
         backgroundTasksExecutorService.scheduleWithFixedDelay(this::checkForObsoleteWelcomeRooms, 1, 1, TimeUnit.MINUTES);
         backgroundTasksExecutorService.scheduleWithFixedDelay(this::sendPresenceStatus, 1, 30, TimeUnit.MINUTES);
+
+        // say hello into the administration room(s)
+        botConfig.getRooms().forEach(room ->
+        {
+            if (botConfig.isRoomModeEnabled(room, Config.RoomMode.ADMINISTRATION))
+            {
+                post(room, "Hello, ChildServ v" + ChildServVersion.VERSION + " is now online.");
+            }
+        });
     }
 
     @SuppressWarnings("rawtypes")
@@ -623,6 +637,20 @@ public class ChildServ
                     {
                         timeline.getEvents().forEach(event ->
                         {
+                            if (event instanceof RoomEvent)
+                            {
+                                final long serverTs = ((RoomEvent<?>) event).getOriginServerTs();
+                                if (serverTs > readyTs)
+                                {
+                                    // update read markers
+                                    final RoomEvent<?> roomEvent = (RoomEvent<?>) event;
+                                    final String lastEvent = roomEvent.getEventId();
+
+                                    mxClient.receipt().sendReceipt(joinEntry.getKey(), lastEvent);
+                                }
+                            }
+
+
                             if (event.getType().equals("m.room.member") && event instanceof RoomEvent)
                             {
                                 final long serverTs = ((RoomEvent<?>) event).getOriginServerTs();

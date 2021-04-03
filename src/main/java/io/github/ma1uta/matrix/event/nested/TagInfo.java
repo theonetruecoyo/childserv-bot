@@ -32,13 +32,13 @@ public class TagInfo {
     @Schema(
         description = "A number in a range [0,1] describing a relative position of the room under the given tag."
     )
-    private Long order;
+    private Double order;
 
-    public Long getOrder() {
+    public Double getOrder() {
         return order;
     }
 
-    public void setOrder(Long order) {
+    public void setOrder(Double order) {
         this.order = order;
     }
 }

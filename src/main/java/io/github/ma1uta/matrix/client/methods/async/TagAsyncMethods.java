@@ -62,7 +62,7 @@ public class TagAsyncMethods {
      * @param order  The tag order.
      * @return The empty response.
      */
-    public CompletableFuture<EmptyResponse> add(String roomId, String tag, Long order) {
+    public CompletableFuture<EmptyResponse> add(String roomId, String tag, Double order) {
         String userId = connectionInfo.getUserId();
         Objects.requireNonNull(roomId, "RoomId cannot be empty.");
         Objects.requireNonNull(userId, "UserId cannot be empty.");

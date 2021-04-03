@@ -52,6 +52,23 @@ Here is the list of the commands :
 - `/admin revoke <id>` : removed the admin rights for the `id` member
 - `/admin list` : list all admins
 
+## Config
+
+- `/login get` : get the current login
+- `/login set <login>` : set the login to `login`
+
+
+- `/password get` : get the current password
+- `/password set <password>` : set the password to `password`
+
+
+- `/host get` : get the current host
+- `/host set <host>` : set the host to `host`
+
+## Other
+
+- `/reboot` : reboot the bot (stop it, it is the operating system that must restart it) 
+
 ## Help
 
 - `/help` : ?????? profit !

@@ -39,3 +39,10 @@ they feel the room is dead.
 ### v1.0.4
 
 - ✅ Switched from joinById to joinByIdOrAlias, the server list is in the config file
+
+### v1.0.5
+
+- ✅ Added login, password and host get / set commands
+- ✅ Corrected a bug in the API where a Long was used instead of a Double
+- ✅ Added reboot command
+- ✅ Added read marker update api call
